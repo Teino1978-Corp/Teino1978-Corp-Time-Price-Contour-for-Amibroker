@@ -16,12 +16,12 @@ ViewBars=ParamToggle("Show Bars","No|Yes", 0);
 PlotOHLC(O,H,L,C,"Price",IIf(C>O,colorGreen,colorRed),IIf(ViewBars==0,styleNoLine,styleBar), Null, Null, Null,-1, 2);
 _N(Title = StrFormat("{{NAME}} - {{INTERVAL}} {{DATE}} Open %g, Hi %g, Lo %g, Close %g (%.1f%%) {{VALUES}}", O, H, L, C, SelectedValue( ROC( C, 1 ) ) ));
 
-ProfileType = ParamList("Profile Tyle","TPOs|Volume|None", 0); 
+ProfileType = ParamList("Profile Tyle","TPCs|Volume|None", 0); 
 Den = Param("Vertical Density", 2, 0.05, 100, 0.25); 
 spread = Param("Horizontal Density", 160, 1, 200, 1);
 teb=ParamToggle("Split Contour","No|Yes", 0); 
 onesigma=70;
-ViewTPOCount= 0; 
+ViewTPCCount= 0; 
 ViewPOC = ParamToggle("Show Prime Mode", "No|Yes",1); 
 Colorpoc=ParamColor("Prime Mode Color", colorYellow); 
 EnIB = ParamToggle("Show First Hour Equilibrium", "Yes|No",0); 
@@ -123,7 +123,7 @@ for (i=i0; i<=i1; i++) {
 
      for (j=0; j<= relTodayRange; j++) {  
       if (L[i] <= baseY+j*Den AND H[i] >= baseY+j*Den) { 
-		if (ProfileType == "TPOs" ) {
+		if (ProfileType == "TPCs" ) {
         PlotText(StrExtract("#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#", 
         IIf(BarsInDay[i]<flt,0,ceil(BarsInDay[i]/(tpl/Intervalmin))-0)), baseX+IIf(teb==1,BarsInDay[i],x[j]*(range_x/spread)), baseY+j*Den, 
 		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==1,ColorB,
@@ -181,12 +181,12 @@ for (i=i0; i<=i1; i++) {
     } 
 
 
-	// Find Total TPOs
+	// Find Total TPCs
     for ( n = 1; n <= relTodayRange; n++ ) { 			
        total[n]=x[n]+total[n-1]; 
         } 
 
-	// 70% of Total TPOs
+	// 70% of Total TPCs
     Value_area=ceil((total[relTodayRange]*onesigma)/100); 	
 
 	
@@ -220,7 +220,7 @@ for (i=i0; i<=i1; i++) {
     if(ViewPOC==1){Plot(poc,"",Colorpoc,styleLine|styleNoRescale);} 
     if(ViewVALVAH==1){PlotText("  "+(baseY+(maxj+shiftup)*Den),i-4.5,baseY+(maxj+shiftup)*Den+Den,colorWhite);} 
     if(ViewVALVAH==1){PlotText("  "+(baseY+(maxj-shiftdn)*Den),i-4.5,baseY+(maxj-shiftdn)*Den-Den-Den,colorWhite);}     
-    if(ViewTPOCount==1){PlotText(""+total[maxj],basex,bot[i]-(Top[i]-bot[i])*0.08,ParamColor("Color_VAL", ColorRGB(168,168,168))); 
+    if(ViewTPCCount==1){PlotText(""+total[maxj],basex,bot[i]-(Top[i]-bot[i])*0.08,ParamColor("Color_VAL", ColorRGB(168,168,168))); 
     PlotText(""+(total[relTodayRange]-total[maxj]),basex,Top[i]+7,ParamColor("Color_VAH", ColorRGB(168,168,168)));} 
 
     if(ViewPOC==1){PlotText("  "+(baseY+maxj*Den),i-5,baseY+maxj*Den,Colorpoc);}  
@@ -250,7 +250,7 @@ if (ProfileType == "Volume") {
 
 //Composite Volume Profile
 
-if (ProfileType == "TPOs" OR ProfileType == "None") {
+if (ProfileType == "TPCs" OR ProfileType == "None") {
 	PlotVAPOverlay( lines = 400, width = 10, color = ColorOverlay, vapstyle = 5 );
 }
 
