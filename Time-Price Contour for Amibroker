@@ -5,7 +5,7 @@ _SECTION_BEGIN("Time & Price Contour");
 // Visit Uptickr's blog on Options Investing at http://www.uptickr.in
 // For Nifty Futures DONT adjust Vertical Density above 2. For smaller stocks,
 // Vertical Density will have to be adjusted lower. Eg. For Rs. 300 stock. set vertical desnity to 0.25.
-// ADJUST SCALE FOR PROPER VISAL APPEARANCE BY SHIFT-CLICKING Y-AXIS
+// ADJUST SCALE FOR PROPER  APPEARANCE BY SHIFT-CLICKING Y-AXIS
 
 Plot( TimeFrameGetPrice("H", inDaily ), "Day's high", ColorRGB(0,199,140), styleNoLine);
 Plot( TimeFrameGetPrice("L", inDaily ), "Day's Low", ColorRGB(255,62,150), styleNoLine);
