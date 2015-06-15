@@ -124,7 +124,7 @@ for (i=i0; i<=i1; i++) {
      for (j=0; j<= relTodayRange; j++) {  
       if (L[i] <= baseY+j*Den AND H[i] >= baseY+j*Den) { 
 		if (ProfileType == "TPCs" ) {
-        PlotText(StrExtract("#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#", 
+        PlotText(StrExtract("#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,X,Y,Z", // THIS IS WHERE THE MAGIC HAPPENS
         IIf(BarsInDay[i]<flt,0,ceil(BarsInDay[i]/(tpl/Intervalmin))-0)), baseX+IIf(teb==1,BarsInDay[i],x[j]*(range_x/spread)), baseY+j*Den, 
 		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==1,ColorB,
 		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==2,ColorC,
