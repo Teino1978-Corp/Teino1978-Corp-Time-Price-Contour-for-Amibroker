@@ -1,0 +1,316 @@
+_SECTION_BEGIN("Time & Price Contour"); 
+
+// Milind and KAKA created the core of this code in 2009-10
+// Tweaks, Additonal Functions & Visual Design by Twitter.com/Uptickr in June 2015
+// Visit Uptickr's blog on Options Investing at http://www.uptickr.in
+
+Plot( TimeFrameGetPrice("H", inDaily ), "Day's high", ColorRGB(0,199,140), styleNoLine);
+Plot( TimeFrameGetPrice("L", inDaily ), "Day's Low", ColorRGB(255,62,150), styleNoLine);
+
+SetChartOptions(0,0,Null);
+SetChartBkColor(colorBlack);
+
+
+GraphXSpace = 10;
+ViewBars=ParamToggle("Show Bars","No|Yes", 0);
+PlotOHLC(O,H,L,C,"Price",IIf(C>O,colorGreen,colorRed),IIf(ViewBars==0,styleNoLine,styleBar), Null, Null, Null,-1, 2);
+_N(Title = StrFormat("{{NAME}} - {{INTERVAL}} {{DATE}} Open %g, Hi %g, Lo %g, Close %g (%.1f%%) {{VALUES}}", O, H, L, C, SelectedValue( ROC( C, 1 ) ) ));
+
+ProfileType = ParamList("Profile Tyle","TPOs|Volume|None", 0); 
+Den = Param("Vertical Density", 2, 0.05, 100, 0.25); 
+spread = Param("Horizontal Density", 160, 1, 200, 1);
+teb=ParamToggle("Split Contour","No|Yes", 0); 
+onesigma=70;
+ViewTPOCount= 0; 
+ViewPOC = ParamToggle("Show Prime Mode", "No|Yes",1); 
+Colorpoc=ParamColor("Prime Mode Color", colorYellow); 
+EnIB = ParamToggle("Show First Hour Equilibrium", "Yes|No",0); 
+ViewVALVAH = ParamToggle("Show High Activity Zone High/Low", "No|Yes",1); 
+Viewfill = ParamToggle("Fill High Activity Zone", "No|Yes",1); 
+Colorfill=ParamColor("High Activity Zone Color", colorOrange);
+ColorIB=ParamColor("First Hour Equilibrium Color", ColorRGB(13,185,242)); 
+IBBars = 2; 
+ColorOverlay = ParamColor("Volume Profile Color", colorGrey40); 
+ColorA = ParamColor("1st Half-Hour Color", ColorRGB(13,185,242)); 
+ColorB = ParamColor("2nd Half-Hour Color", ColorRGB(234,205,166));
+ColorC = ParamColor("3rd Half-Hour Color", colorLime); 
+ColorD = ParamColor("4th Half-Hour Color", colorLightOrange); 
+ColorE = ParamColor("5th Half-Hour Color", ColorRGB(128,255,172)); 
+ColorF = ParamColor("6th Half-Hour Color", ColorRGB(255,28,255)); 
+ColorG = ParamColor("7th Half-Hour Color", colorWhite); 
+ColorH = ParamColor("8th Half-Hour Color", ColorRGB(255,85,85)); 
+ColorI = ParamColor("9th Half-Hour Color", colorLightGrey); 
+ColorJ = ParamColor("10th Half-Hour Color", ColorRGB(255,149,255)); 
+ColorK = ParamColor("11th Half-Hour Color", colorYellow); 
+ColorL = ParamColor("12th Half-Hour Color", colorCustom11);
+ColorM = ParamColor("13th Half-Hour Color", colorCustom10); 
+
+BarsInDay = BarsSince(Day() != Ref(Day(), -1)); 
+Bot = TimeFrameGetPrice("L", inDaily, 0); 
+Top = TimeFrameGetPrice("H", inDaily, 0); 
+Vol = TimeFrameGetPrice("V", inDaily, 0); 
+
+
+CurTop = HHV(H,BarsInDay+1); 
+Curbot = LLV(L,BarsInDay+1); 
+Range = Highest(Top-Bot); 
+TodayRange = Top - Bot; 
+
+AveRange = Sum(Top-Bot,30)/30; 
+LAveRange = AveRange[BarCount-1]; 
+
+// Initialization 
+baseX = 0; 
+baseY = floor(Bot[0]/Den)*Den; 
+relTodayRange = 0; 
+firstVisBar = Status("firstvisiblebar"); 
+lastVisBar = Status("lastvisiblebar"); 
+
+D=.0005; 
+total=0; 
+totaldn=0; 
+totalup=0; 
+shiftup=0; 
+shiftdn=0;
+startr=0; 
+
+for (j=0; j <= 100; j++) { 
+  x[j] = 0; 
+} 
+
+BX=Volume;
+AX=Avg;
+ValueX=BX*AX;
+BarsfromtodaybeginX = 1 + BarsSince( Day() != Ref(Day(), -1));
+TotalvalueX=Sum(ValueX,BarsfromtodaybeginX);
+TotalvolumeX=Sum(V,BarsfromtodaybeginX);
+ATPX=(TotalvalueX/TotalvolumeX);
+
+
+i0 = 0; 
+i1 = 0; 
+for (i=0; i<BarCount; i++) { 
+  if (BarsInDay[i] == 0 AND i < firstVisBar) { 
+    i0 = i; 
+  } 
+  if (BarsInDay[i] == 0 AND i >= lastVisBar) { 
+    i1 = i; 
+  } 
+} 
+
+i1 = BarCount-1; 
+for (i=i0; i<=i1; i++) { 
+  if (BarsInDay[i] == 0) { 
+    baseX = i; 
+    baseY = floor(Bot[i]/Den)*Den; 
+    maxY = floor(Top[i]/Den)*Den; 
+    relTodayRange = (maxY-baseY)/Den; 
+	
+
+    for (j=0; j <= relTodayRange; j++) { 
+      x[j] = 0; 
+    } 
+  } 
+    
+    range_x=lastVisBar-firstVisBar;  
+    tpl = 30; 
+    Intervalmin=Interval()/60; 
+    flt = 1; 
+    Color=20; 
+    stopg=0; 
+    stopr=0; 
+    new=0;
+
+     for (j=0; j<= relTodayRange; j++) {  
+      if (L[i] <= baseY+j*Den AND H[i] >= baseY+j*Den) { 
+		if (ProfileType == "TPOs" ) {
+        PlotText(StrExtract("#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#,#", 
+        IIf(BarsInDay[i]<flt,0,ceil(BarsInDay[i]/(tpl/Intervalmin))-0)), baseX+IIf(teb==1,BarsInDay[i],x[j]*(range_x/spread)), baseY+j*Den, 
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==1,ColorB,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==2,ColorC,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==3,ColorD,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==4,ColorE,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==5,ColorF,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==6,ColorG,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==7,ColorH,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==8,ColorI,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==9,ColorJ,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==10,ColorK,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==11,ColorL,
+		 IIf(ceil(BarsInDay[i]/(tpl/Intervalmin))==12,ColorM,
+		 ColorA)))))))))))));
+		}
+       x[j]++;
+		printf(""+x[j]+" ");
+
+      } 
+    } 
+
+
+     
+
+  //Draw Initial Balance after 10:15am bar is complete 
+  if (BarsInDay[i] == IBBars AND EnIB == 0) { 
+    LX=Line1 = LineArray(i-2, curtop[i-1],i+9, curtop[i-1],0,True); 
+    Plot(Line1,"",colorIB,styleLine+styleDashed|styleNoRescale); 
+    LY=Line1 = LineArray(i-2, curbot[i-1],i+9, curbot[i-1],0,True); 
+    Plot(Line1,"",colorIB,styleLine+styleDashed|styleNoRescale); 
+    //PlotOHLC(LX,LX,LY,LY,"",colorIB,styleCloud,styleNoLabel,Null,Null,Null,-2); 
+
+  } 
+
+  //Value Area
+
+  if ((i < BarCount - 1 AND BarsInDay[i+1] == 0) OR i == BarCount-1) { 
+    maxXj = 0; 
+    maxj = 0; 
+    midrange = int( relTodayRange / 2 ) + 1;
+
+    for (j=0; j<= relTodayRange; j++) { 
+      if (maxXj < x[j]) {maxXj = x[j]; maxj = j;	
+      } 
+				else if ( Maxxj == x[j]) 
+                {
+                    if ( abs( midrange - j ) < abs( midrange - maxj ) )
+                    {
+                        MaxXj = x[j];
+                        Maxj = j;
+                    }
+                }
+
+    } 
+
+
+	// Find Total TPOs
+    for ( n = 1; n <= relTodayRange; n++ ) { 			
+       total[n]=x[n]+total[n-1]; 
+        } 
+
+	// 70% of Total TPOs
+    Value_area=ceil((total[relTodayRange]*onesigma)/100); 	
+
+	
+
+    for ( a = 1; a <= relTodayRange; a++ ) 
+     { 
+        if(Maxj-a>0 AND Maxj+a<relTodayRange) 
+        { 
+            if(MaxXj+total[Maxj+a]-total[Maxj]+total[Maxj-1]-total[Maxj-(a+1)]>=Value_area) {shiftup=a; shiftdn=a; break;} 
+         }     
+        else if(Maxj-a<1 )  
+        { 
+            if(MaxXj+total[Maxj+a]-total[Maxj]+total[Maxj-IIf(Maxj>0,-1,0)]>=Value_area){shiftup=a; shiftdn=maxj-1; break;}         
+           } 
+        else if(Maxj+a>relTodayRange )  
+        { 
+            if(MaxXj+total[relTodayRange]-total[Maxj]+total[Maxj-1]-total[Maxj-(a+1)] >=Value_area){shiftup=relTodayRange-maxj; shiftdn=a; break;}         
+           } 
+     }  
+
+ 
+    Vah = LineArray(i-2, baseY+(maxj+shiftup)*Den, i-1, baseY+(maxj+shiftup)*Den,0,True);  
+    Val = LineArray(i-2, baseY+(maxj-shiftdn)*Den, i-1, baseY+(maxj-shiftdn)*Den,0,True); 
+    VahX = LineArray(BaseX, baseY+(maxj+shiftup)*Den, i-1, baseY+(maxj+shiftup)*Den,0,True);  
+    ValX = LineArray(BaseX, baseY+(maxj-shiftdn)*Den, i-1, baseY+(maxj-shiftdn)*Den,0,True); 
+
+
+    poc = LineArray(baseX, baseY+maxj*Den, i, baseY+maxj*Den,0,True);  
+    if(ViewVALVAH==1){Plot(VahX,"",colorfill,styleLine|styleNoRescale); 
+    Plot(ValX,"",colorfill,styleLine|styleNoRescale);} 
+    if(ViewPOC==1){Plot(poc,"",Colorpoc,styleLine|styleNoRescale);} 
+    if(ViewVALVAH==1){PlotText("  "+(baseY+(maxj+shiftup)*Den),i-4.5,baseY+(maxj+shiftup)*Den+Den,colorWhite);} 
+    if(ViewVALVAH==1){PlotText("  "+(baseY+(maxj-shiftdn)*Den),i-4.5,baseY+(maxj-shiftdn)*Den-Den-Den,colorWhite);}     
+    if(ViewTPOCount==1){PlotText(""+total[maxj],basex,bot[i]-(Top[i]-bot[i])*0.08,ParamColor("Color_VAL", ColorRGB(168,168,168))); 
+    PlotText(""+(total[relTodayRange]-total[maxj]),basex,Top[i]+7,ParamColor("Color_VAH", ColorRGB(168,168,168)));} 
+
+    if(ViewPOC==1){PlotText("  "+(baseY+maxj*Den),i-5,baseY+maxj*Den,Colorpoc);}  
+  } 
+     
+    if (i < BarCount - 1 AND BarsInDay[i+1] == 0 OR i == BarCount-1) { 
+     
+      for  (p = 1; p < relTodayRange+1; p++){ 
+      line = LineArray(baseX, baseY+p*Den, baseX+x[p], baseY+p*Den);  
+      line2 = LineArray(baseX, baseY+(p-1)*Den, baseX+x[p-1], baseY+(p-1)*Den); 
+   } 
+     if(Viewfill==1 AND ProfileType != "Volume"){PlotOHLC(Vah,Vah,Val,Val,"",Colorfill,styleCloud|styleNoRescale|styleNoLabel, Null,Null, Null,-9);} 
+
+ }  
+} 
+
+
+//Volume Profile
+
+if (ProfileType == "Volume") {
+	segments = IIf( Interval() < inDaily, Day(), Month() ); 
+	segments = segments != Ref( segments , -1 ); 
+
+	PlotVAPOverlayA( segments , 800, 80, colorOverlay, 4); 
+
+}
+
+//Composite Volume Profile
+
+if (ProfileType == "TPOs" OR ProfileType == "None") {
+	PlotVAPOverlay( lines = 400, width = 10, color = ColorOverlay, vapstyle = 5 );
+}
+
+
+
+
+_SECTION_END(); 
+
+
+_SECTION_BEGIN("Essential Trader Tools");
+
+ViewVWAP = ParamToggle("View VWAP", "No|Yes"); 
+
+if(ViewVWAP==1){
+
+B=Volume;
+A=Avg;
+Value=B*A;
+Barsfromtodaybegin = 1 + BarsSince( Day() != Ref(Day(), -1));
+Totalvalue=Sum(Value,Barsfromtodaybegin);
+Totalvolume=Sum(V,Barsfromtodaybegin);
+ATP=(Totalvalue/Totalvolume);
+Plot(ATP,"ATP",colorGold,styleLine);
+
+}
+
+
+DayH = TimeFrameGetPrice("H", inDaily, -1);	 DayHI = LastValue (DayH,1); 	// Yesterday's High
+DayL = TimeFrameGetPrice("L", inDaily, -1);	 DayLO = LastValue (DayL,1);	// Yesterday's Low
+DayC = TimeFrameGetPrice("C", inDaily, -1);	 DayCL = LastValue (DayC,1);	// Yesterday's Close
+DayO = TimeFrameGetPrice("O", inDaily);		 DayOP = LastValue (DayO,1);	// Today's Open
+
+numbars = LastValue(Cum(Status("barvisible")));
+hts  = -33.5;
+
+YHL = ParamToggle("Yesterday's High/Low","Hide|Show",0);
+YCL = ParamToggle("Yesterday's Close","Hide|Show",0);
+TOP = ParamToggle("Today's Open","Hide|Show",0);
+
+if(YHL==1) {
+  Plot(DayL,"YL",colorWhite,styleDashed|styleNoRescale|styleNoTitle);
+  Plot(DayH,"YH",colorWhite,styleDashed|styleNoRescale|styleNoTitle);
+  
+  
+  PlotText(" Yesterday's High " , 	LastValue(BarIndex())-(numbars/Hts), DayHI, colorWhite);
+  PlotText(" Yesterday's Low " , 	LastValue(BarIndex())-(numbars/Hts), DayLO, colorWhite);
+  
+  
+
+}
+
+if(YCL==1) {
+  Plot(DayC,"YC",colorWhite,styleDashed|styleNoRescale|styleNoTitle);
+  PlotText(" Yesterday's Close " , 	LastValue(BarIndex())-(numbars/Hts), DayCL, colorWhite);
+}
+
+if(TOP==1) {
+  Plot(DayO,"TO",colorWhite,styleDashed|styleNoRescale|styleNoTitle);
+  PlotText(" Today's Open " , 	LastValue(BarIndex())-(numbars/Hts), DayOP, colorWhite);
+}
+
+
+_SECTION_END();
